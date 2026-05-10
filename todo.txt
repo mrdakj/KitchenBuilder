@@ -1,0 +1,20 @@
+- 3d button is not visible
+- sound is a bit late
+- snap doesn't work when i want to place object
+- oven doesn't snap to cabinet open element properly, its front should snap to cabinet front and top and bottom
+- i want to add drawer to open cabinet after i place oven in it
+- i want to extrude wall as well
+- merge walls (patch corners) when moved/extruded/rotated/scaled if they are close enough
+- extrude object left/right moves object back/front. i dont want any movement
+- add button for unextrude like alt+shift+arrow
+- add corner cabinet
+- moving wall doesn't snap
+- option to add doors and drawers to open element in propery menu, set size based on cabinet size including its transforms
+- move objects in 2d space
+- light is impossible to move with control it goes away with small mouse movement
+- default light is too strong
+- i don't see diff when add material normal and roughness textures
+- add predefined materials to be able to select for cabinets (C:\Users\jepet\Downloads\Wood095_*)
+- hole for sink is not accurate, by width it is too small, by depth it is too big
+- auto rotate objects based on walls, if moving object to be placed near to wall rotate it to fit it
+

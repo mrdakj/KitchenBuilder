@@ -1,0 +1,699 @@
+{
+  "accessors": [
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 2518,
+      "max": [
+        27.484935760498047,
+        2.3045480251312256,
+        41.662071228027344
+      ],
+      "min": [
+        -29.256248474121094,
+        -30.446125030517578,
+        -41.66205978393555
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 30216,
+      "componentType": 5126,
+      "count": 2518,
+      "max": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "min": [
+        -1.0,
+        -0.0011902425903826952,
+        -1.0
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 2518,
+      "max": [
+        1.0,
+        1.0,
+        0.9999997615814209,
+        1.0
+      ],
+      "min": [
+        -1.0,
+        -1.0,
+        -0.9999774694442749,
+        1.0
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 2518,
+      "max": [
+        0.9964452385902405,
+        0.9974777698516846
+      ],
+      "min": [
+        0.0025173856411129236,
+        0.002514103427529335
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 20144,
+      "componentType": 5126,
+      "count": 2518,
+      "max": [
+        0.9964452385902405,
+        0.9974777698516846
+      ],
+      "min": [
+        0.0025173856411129236,
+        0.002514103427529335
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "componentType": 5125,
+      "count": 10320,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 60432,
+      "componentType": 5126,
+      "count": 641,
+      "max": [
+        20.96682357788086,
+        30.18840217590332,
+        1.927248239517212
+      ],
+      "min": [
+        -1.9351184368133545,
+        0.0,
+        -1.9272387027740479
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 68124,
+      "componentType": 5126,
+      "count": 641,
+      "max": [
+        1.0,
+        0.9967836737632751,
+        1.0
+      ],
+      "min": [
+        -1.0,
+        -0.9968081712722778,
+        -1.0
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "byteOffset": 40288,
+      "componentType": 5126,
+      "count": 641,
+      "max": [
+        0.9997888207435608,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "min": [
+        -0.9999755620956421,
+        -0.9851450324058533,
+        -0.9999986886978149,
+        1.0
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 40288,
+      "componentType": 5126,
+      "count": 641,
+      "max": [
+        0.9736394882202148,
+        0.9797548651695251
+      ],
+      "min": [
+        0.013571351766586304,
+        0.00252373144030571
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 45416,
+      "componentType": 5126,
+      "count": 641,
+      "max": [
+        0.9736394882202148,
+        0.9797548651695251
+      ],
+      "min": [
+        0.013571351766586304,
+        0.00252373144030571
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 41280,
+      "componentType": 5125,
+      "count": 2910,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 75816,
+      "componentType": 5126,
+      "count": 167,
+      "max": [
+        1.6963094472885132,
+        3.9577372074127197,
+        1.6963154077529907
+      ],
+      "min": [
+        -1.6963138580322266,
+        -0.0007681548595428467,
+        -1.696307897567749
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 77820,
+      "componentType": 5126,
+      "count": 167,
+      "max": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "min": [
+        -1.0,
+        -0.9999998807907104,
+        -1.0
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "byteOffset": 50544,
+      "componentType": 5126,
+      "count": 167,
+      "max": [
+        0.32957717776298523,
+        1.0,
+        0.39111822843551636,
+        1.0
+      ],
+      "min": [
+        -0.9795802235603333,
+        -0.0006223183590918779,
+        -0.8347230553627014,
+        1.0
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 50544,
+      "componentType": 5126,
+      "count": 167,
+      "max": [
+        0.6569699048995972,
+        0.20803184807300568
+      ],
+      "min": [
+        0.002523059956729412,
+        0.002517008688300848
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 51880,
+      "componentType": 5126,
+      "count": 167,
+      "max": [
+        0.6569699048995972,
+        0.20803184807300568
+      ],
+      "min": [
+        0.002523059956729412,
+        0.002517008688300848
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 52920,
+      "componentType": 5125,
+      "count": 618,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 79824,
+      "componentType": 5126,
+      "count": 167,
+      "max": [
+        1.6963094472885132,
+        3.9577372074127197,
+        1.696307897567749
+      ],
+      "min": [
+        -1.6963138580322266,
+        -0.0007681548595428467,
+        -1.6963154077529907
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 81828,
+      "componentType": 5126,
+      "count": 167,
+      "max": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "min": [
+        -1.0,
+        -0.9999998807907104,
+        -1.0
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "byteOffset": 53216,
+      "componentType": 5126,
+      "count": 167,
+      "max": [
+        0.3295768201351166,
+        1.0,
+        0.8347230553627014,
+        -1.0
+      ],
+      "min": [
+        -0.9795799255371094,
+        -0.0006223097443580627,
+        -0.39111870527267456,
+        -1.0
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 53216,
+      "componentType": 5126,
+      "count": 167,
+      "max": [
+        0.6569699048995972,
+        0.20803184807300568
+      ],
+      "min": [
+        0.002523059956729412,
+        0.002517008688300848
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 54552,
+      "componentType": 5126,
+      "count": 167,
+      "max": [
+        0.6569699048995972,
+        0.20803184807300568
+      ],
+      "min": [
+        0.002523059956729412,
+        0.002517008688300848
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 55392,
+      "componentType": 5125,
+      "count": 618,
+      "type": "SCALAR"
+    }
+  ],
+  "asset": {
+    "extras": {
+      "author": "HippoStance (https://sketchfab.com/hippostance)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/kitchen-sink-504248ed68e3480a807aced6f002b2d5",
+      "title": "Kitchen Sink"
+    },
+    "generator": "Sketchfab-12.68.0",
+    "version": "2.0"
+  },
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 57864,
+      "name": "floatBufferViews",
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteLength": 55888,
+      "byteOffset": 57864,
+      "byteStride": 8,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 83832,
+      "byteOffset": 113752,
+      "byteStride": 12,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 55888,
+      "byteOffset": 197584,
+      "byteStride": 16,
+      "name": "floatBufferViews",
+      "target": 34962
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 253472,
+      "uri": "scene.bin"
+    }
+  ],
+  "images": [
+    {
+      "uri": "textures/KitchenSink_baseColor.png"
+    },
+    {
+      "uri": "textures/KitchenSink_metallicRoughness.png"
+    },
+    {
+      "uri": "textures/KitchenSink_normal.png"
+    }
+  ],
+  "materials": [
+    {
+      "doubleSided": true,
+      "name": "KitchenSink",
+      "normalTexture": {
+        "index": 2
+      },
+      "occlusionTexture": {
+        "index": 1
+      },
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 1
+        }
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "KitchenSink_KitchenSink_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 1,
+            "POSITION": 0,
+            "TANGENT": 2,
+            "TEXCOORD_0": 3,
+            "TEXCOORD_1": 4
+          },
+          "indices": 5,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "KitchenSinkFaucet_KitchenSink_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 7,
+            "POSITION": 6,
+            "TANGENT": 8,
+            "TEXCOORD_0": 9,
+            "TEXCOORD_1": 10
+          },
+          "indices": 11,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "KitchenSinkHandleR_KitchenSink_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 13,
+            "POSITION": 12,
+            "TANGENT": 14,
+            "TEXCOORD_0": 15,
+            "TEXCOORD_1": 16
+          },
+          "indices": 17,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "KitchenSinkHandleL_KitchenSink_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 19,
+            "POSITION": 18,
+            "TANGENT": 20,
+            "TEXCOORD_0": 21,
+            "TEXCOORD_1": 22
+          },
+          "indices": 23,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "children": [
+        1
+      ],
+      "matrix": [
+        0.009999999776482582,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.2204459996194763e-18,
+        -0.009999999776482582,
+        0.0,
+        0.0,
+        0.009999999776482582,
+        2.2204459996194763e-18,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "Sketchfab_model"
+    },
+    {
+      "children": [
+        2
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        -1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "KitchenSink.fbx"
+    },
+    {
+      "children": [
+        3
+      ],
+      "name": "RootNode"
+    },
+    {
+      "children": [
+        4,
+        6,
+        8,
+        10
+      ],
+      "name": "KitchenSinkPivot"
+    },
+    {
+      "children": [
+        5
+      ],
+      "name": "KitchenSink"
+    },
+    {
+      "mesh": 0,
+      "name": "KitchenSink_KitchenSink_0"
+    },
+    {
+      "children": [
+        7
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        -24.13583755493164,
+        2.473005771636963,
+        0.0005531435599550605,
+        1.0
+      ],
+      "name": "KitchenSinkFaucet"
+    },
+    {
+      "mesh": 1,
+      "name": "KitchenSinkFaucet_KitchenSink_0"
+    },
+    {
+      "children": [
+        9
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        -24.138797760009766,
+        2.3446731567382813,
+        -6.975056171417236,
+        1.0
+      ],
+      "name": "KitchenSinkHandleR"
+    },
+    {
+      "mesh": 2,
+      "name": "KitchenSinkHandleR_KitchenSink_0"
+    },
+    {
+      "children": [
+        11
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        -24.138797760009766,
+        2.3446731567382813,
+        6.976105213165283,
+        1.0
+      ],
+      "name": "KitchenSinkHandleL"
+    },
+    {
+      "mesh": 3,
+      "name": "KitchenSinkHandleL_KitchenSink_0"
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "Sketchfab_Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "source": 0
+    },
+    {
+      "sampler": 0,
+      "source": 1
+    },
+    {
+      "sampler": 0,
+      "source": 2
+    }
+  ]
+}
