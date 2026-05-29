@@ -161,7 +161,7 @@ export function DblClickMover() {
       const dy = free.y - n.transform.position[1]
       const dz = free.z - n.transform.position[2]
       const wallRot = shouldAutoRotateToWall(n as AnyNode)
-        ? findWallFacingRotation([free.x, free.y, free.z])
+        ? findWallFacingRotation([free.x, free.y, free.z], n as AnyNode)
         : null
       const rotationY = wallRot ?? n.transform.rotationY
 

@@ -8,11 +8,21 @@ import { useScene } from '@/core/store/use-scene'
 import type { AnyNode } from '@/core/schema'
 
 const FACE_DIST = 0.6 // 60 cm — within this range of a wall, auto-orient
+const WALL_END_TOLERANCE = 0.05
+const QUARTER_TURN = Math.PI / 2
 
 export function shouldAutoRotateToWall(node: AnyNode): boolean {
   if (node.type === 'cabinet') return true
   if (node.type !== 'custom-item') return false
   return node.assetId === 'predef:fridge' || node.assetId === 'predef:oven'
+}
+
+function visualFrontOffsetY(node: AnyNode | null): number {
+  if (node?.type !== 'custom-item') return 0
+  // The bundled fridge GLTF's door/handle side is local +X after its
+  // authored root transform, unlike cabinets whose doors face local +Z.
+  if (node.assetId === 'predef:fridge') return QUARTER_TURN
+  return 0
 }
 
 /**
@@ -29,6 +39,7 @@ export function shouldAutoRotateToWall(node: AnyNode): boolean {
  */
 export function findWallFacingRotation(
   pos: [number, number, number],
+  node: AnyNode | null = null,
   maxDist = FACE_DIST,
 ): number | null {
   const nodes = useScene.getState().nodes
@@ -55,9 +66,11 @@ export function findWallFacingRotation(
     const distAbs = Math.abs(distSigned)
     if (distAbs > maxDist) continue
     // Position along the wall (must be inside the wall's footprint, with
-    // a small tolerance — corners count too).
+    // only a tiny tolerance for float/grid noise. A loose corner tolerance
+    // makes appliances rotate when they are near a wall end instead of
+    // actually against the wall face.
     const along = relX * dirX + relZ * dirZ
-    if (Math.abs(along) > len / 2 + maxDist) continue
+    if (Math.abs(along) > len / 2 + WALL_END_TOLERANCE) continue
     if (distAbs < bestDist) {
       bestDist = distAbs
       // Outward normal pointing FROM wall TOWARD object.
@@ -65,7 +78,7 @@ export function findWallFacingRotation(
       const tx = nX * sign
       const tz = nZ * sign
       // Three.js: local +Z direction in world = (sin(rotY), cos(rotY)).
-      bestRot = Math.atan2(tx, tz)
+      bestRot = Math.atan2(tx, tz) - visualFrontOffsetY(node)
     }
   }
   return bestRot

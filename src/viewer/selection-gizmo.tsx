@@ -543,7 +543,7 @@ export function SelectionGizmo() {
           applyStickySnap(node as any, dims, p, snapStateRef.current, prevPosRef.current, undefined, undefined, suppress, mode)
           target.position.set(p.x, p.y, p.z)
           const wallRot = shouldAutoRotateToWall(node)
-            ? findWallFacingRotation([p.x, p.y, p.z])
+            ? findWallFacingRotation([p.x, p.y, p.z], node)
             : null
           if (wallRot !== null) target.rotation.y = wallRot
           prevPosRef.current = p.clone()

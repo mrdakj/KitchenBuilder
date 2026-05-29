@@ -9,7 +9,7 @@ import { useScene } from '@/core/store/use-scene'
 import { snap } from '@/core/utils/math'
 import { boxFor, collidesBox, isAllowedBuiltInCabinetOverlap } from '@/core/systems/collision'
 import { buildCabinetGeometry } from '@/core/geometry/cabinet'
-import type { CabinetNode } from '@/core/schema'
+import type { AnyNode, CabinetNode } from '@/core/schema'
 import { getAssetBbox, setAssetBbox } from '@/core/assets/asset-bbox'
 import { getPredefinedAsset, isPredefinedAssetId } from '@/core/assets/predefined'
 import { findWallFacingRotation } from '@/core/systems/auto-rotate'
@@ -76,10 +76,40 @@ export function PlacementPreview() {
         }
       }
     }
-    const wallRot =
-      tool === 'cabinet' || (tool === 'place-item' && (placingId === 'predef:fridge' || placingId === 'predef:oven'))
-        ? findWallFacingRotation([sx, groundY, sz])
-        : null
+    let previewNode: AnyNode | null = null
+    if (tool === 'cabinet') {
+      const cab = useEditor.getState().cabinetDefaults
+      previewNode = {
+        id: '__preview__',
+        type: 'cabinet',
+        parentId: null,
+        visible: true,
+        transform: { position: [sx, groundY, sz], rotationY: 0 },
+        style: cab.style,
+        width: cab.width,
+        height: cab.height,
+        depth: cab.depth,
+        doorKind: cab.doorKind,
+        drawerCount: cab.drawerCount,
+        stackedBelowId: null,
+        fillerKind: 'none',
+        carcassMaterial: { color: '#ffffff', roughness: 0.6, metalness: 0 },
+        doorMaterial: { color: '#e5e5e5', roughness: 0.5, metalness: 0 },
+        handleMaterial: { color: '#333333', roughness: 0.2, metalness: 0.8 },
+      }
+    } else if (tool === 'place-item' && (placingId === 'predef:fridge' || placingId === 'predef:oven')) {
+      previewNode = {
+        id: '__preview__',
+        type: 'custom-item',
+        parentId: null,
+        visible: true,
+        assetId: placingId,
+        transform: { position: [sx, groundY, sz], rotationY: 0 },
+        scale: [1, 1, 1],
+        materialOverrides: {},
+      }
+    }
+    const wallRot = previewNode ? findWallFacingRotation([sx, groundY, sz], previewNode) : null
     group.current.position.set(sx, groundY, sz)
     group.current.rotation.y = wallRot ?? 0
 

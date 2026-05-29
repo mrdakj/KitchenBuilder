@@ -161,7 +161,7 @@ export function ToolOverlay3D() {
           handleMaterial: { color: '#333', roughness: 0.2, metalness: 0.8 },
         }
         const [psx, py, psz] = snapPlacement(stub, sx, y, sz)
-        const facingRot = findWallFacingRotation([psx, py, psz]) ?? 0
+        const facingRot = findWallFacingRotation([psx, py, psz], stub) ?? 0
         const box = boxFor('cabinet', [psx, 0, psz], { w: d.width, h: d.height, d: d.depth, y: py })
         if (collidesBox(null, box)) {
           console.warn('cabinet placement blocked — would collide')
@@ -356,7 +356,7 @@ export function ToolOverlay3D() {
         const facingRot = assetId === 'predef:oven'
           ? initialRotationY
           : wantsWallFacing
-            ? (findWallFacingRotation([psx, pY, psz]) ?? 0)
+            ? (findWallFacingRotation([psx, pY, psz], stub) ?? 0)
             : 0
         const placedDims = dimsOf({ ...stub, transform: { ...stub.transform, position: [psx, pY, psz] } })
           ?? { w: 0.5, h: 0.5, d: 0.5 }
