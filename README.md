@@ -5,7 +5,7 @@ walls, lights, and predefined appliances (sink, mixer, fridge, oven,
 induction hob); arrange them in a 2D plan or 3D viewport with kitchen-aware
 snapping; tweak materials and lighting; export the layout as JSON.
 
-![Demo screenshot](screenshots/Screenshot 2026-05-29.png) <!-- optional, add later -->
+![Demo screenshot](screenshots/demo-screenshot.png)
 
 ## Quickstart
 
