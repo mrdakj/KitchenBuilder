@@ -35,6 +35,7 @@ export const CabinetNode = BaseNode.extend({
   doorKind: CabinetDoorKind.default('single'),
   drawerCount: z.number().int().min(1).max(6).default(3),
   stackedBelowId: z.string().nullable().default(null),
+  fillerKind: z.enum(['none', 'drawer']).default('none'),
   carcassMaterial: MaterialRef.default({ color: '#ffffff' }),
   doorMaterial: MaterialRef.default({ color: '#e5e5e5' }),
   handleMaterial: MaterialRef.default({ color: '#333333', metalness: 0.8, roughness: 0.2 }),

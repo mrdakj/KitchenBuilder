@@ -52,7 +52,8 @@ export function extrudeFace(
   if (!n || (n.type !== 'cabinet' && n.type !== 'countertop')) return
   const cur = n as CabinetNode | CountertopNode
   const baseStep = ed.snapStep
-  let next = Math.max(0.1, (cur as any)[dim] + baseStep * growSign)
+  const currentDim = (cur as any)[dim] as number
+  let next = Math.max(0.1, currentDim + baseStep * growSign)
   // Local-axis shift: positive `shift` along the cabinet's LOCAL X (width)
   // or LOCAL Z (depth) — direction it moves to keep the opposite face
   // anchored. We rotate this into world XZ at the end so a cabinet rotated
@@ -66,7 +67,7 @@ export function extrudeFace(
   let extDx = dim === 'width' ? shift * cosR : shift * sinR
   let extDz = dim === 'width' ? -shift * sinR : shift * cosR
 
-  if (ed.snapEnabled && Math.abs(cur.transform.rotationY) < 0.05) {
+  if (ed.snapEnabled && isAxisAligned(cur.transform.rotationY)) {
     const axis: 0 | 2 = dim === 'width' ? 0 : 2
     const lat: 0 | 2 = axis === 0 ? 2 : 0
     const selfH = cur.type === 'countertop' ? cur.thickness : cur.height
@@ -76,7 +77,11 @@ export function extrudeFace(
     const sLatPos = lat === 0 ? px : pz
     const sLatMin = sLatPos - sLatExt / 2
     const sLatMax = sLatPos + sLatExt / 2
-    const anchorFace = (axis === 0 ? px : pz) - arrowDir * (axis === 0 ? cur.width : cur.depth) / 2
+    const oldCenter = axis === 0 ? px : pz
+    const oldExt = axis === 0 ? cur.width : cur.depth
+    const oldFace = oldCenter + arrowDir * oldExt / 2
+    const movementDir = growSign * arrowDir
+    const anchorFace = oldCenter - arrowDir * oldExt / 2
     const newCenter = axis === 0 ? px + extDx : pz + extDz
     const newFace = newCenter + arrowDir * next / 2
 
@@ -123,6 +128,7 @@ export function extrudeFace(
       const oExtAxis = axis === 0 ? oW : oD
       const oCAxis = axis === 0 ? oCx : oCz
       for (const cand of [oCAxis - oExtAxis / 2, oCAxis + oExtAxis / 2]) {
+        if ((cand - oldFace) * movementDir <= 1e-6) continue
         const d = Math.abs(cand - newFace)
         if (d < bestDist) {
           bestDist = d
@@ -135,9 +141,9 @@ export function extrudeFace(
       const newDim = (bestSnapped - anchorFace) * arrowDir
       if (newDim >= 0.1) {
         next = newDim
-        const newShift = (newDim - (cur as any)[dim]) * arrowDir / 2
-        extDx = dim === 'width' ? newShift : 0
-        extDz = dim === 'depth' ? newShift : 0
+        const newShift = (newDim - currentDim) * arrowDir / 2
+        extDx = dim === 'width' ? newShift * cosR : newShift * sinR
+        extDz = dim === 'width' ? -newShift * sinR : newShift * cosR
       }
     }
   }

@@ -188,6 +188,7 @@ export function Canvas2D() {
         doorKind: 'single',
         drawerCount: 3,
         stackedBelowId: null,
+        fillerKind: 'none',
         carcassMaterial: { color: '#ffffff', roughness: 0.6, metalness: 0 },
         doorMaterial: { color: '#e5e5e5', roughness: 0.5, metalness: 0 },
         handleMaterial: { color: '#333333', roughness: 0.2, metalness: 0.8 },

@@ -1,5 +1,3 @@
-- 3d button is not visible
-- sound is a bit late
 - snap doesn't work when i want to place object
 - oven doesn't snap to cabinet open element properly, its front should snap to cabinet front and top and bottom
 - i want to add drawer to open cabinet after i place oven in it
@@ -15,6 +13,5 @@
 - default light is too strong
 - i don't see diff when add material normal and roughness textures
 - add predefined materials to be able to select for cabinets (C:\Users\jepet\Downloads\Wood095_*)
-- hole for sink is not accurate, by width it is too small, by depth it is too big
 - auto rotate objects based on walls, if moving object to be placed near to wall rotate it to fit it
 

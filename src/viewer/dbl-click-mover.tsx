@@ -9,6 +9,7 @@ import { sceneRegistry } from '@/core/registry/scene-registry'
 import type { AnyNode, CabinetNode, CountertopNode, CustomItemNode, EmptyNode, LightNode, WallNode } from '@/core/schema'
 import { applyStickySnap, createSnapState, dimsOf, resetSnapState, snapWallTranslate } from '@/core/systems/object-snap'
 import { deselectState, moveMode } from '@/core/systems/deselect-state'
+import { findWallFacingRotation, shouldAutoRotateToWall } from '@/core/systems/auto-rotate'
 
 const TRANSFORMABLE = new Set(['cabinet', 'countertop', 'custom-item', 'wall', 'light', 'empty'])
 
@@ -159,11 +160,18 @@ export function DblClickMover() {
       const dx = free.x - n.transform.position[0]
       const dy = free.y - n.transform.position[1]
       const dz = free.z - n.transform.position[2]
+      const wallRot = shouldAutoRotateToWall(n as AnyNode)
+        ? findWallFacingRotation([free.x, free.y, free.z])
+        : null
+      const rotationY = wallRot ?? n.transform.rotationY
 
       const obj = sceneRegistry.get(id)
-      if (obj) obj.position.set(free.x, free.y, free.z)
+      if (obj) {
+        obj.position.set(free.x, free.y, free.z)
+        obj.rotation.y = rotationY
+      }
       useScene.getState().updateNode(id, {
-        transform: { ...n.transform, position: [free.x, free.y, free.z] },
+        transform: { ...n.transform, position: [free.x, free.y, free.z], rotationY },
       } as Partial<typeof n>)
 
       // Shift followers (other selected + descendants) by the same delta.

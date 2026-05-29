@@ -110,6 +110,18 @@ function CabinetFields({ node }: { node: CabinetNode }) {
           onChange={(v) => update(node.id, { drawerCount: Math.round(v) })} />
       )}
 
+      {node.doorKind === 'none' && (
+        <Field label="Fill bottom">
+          <select
+            className="inp"
+            value={node.fillerKind}
+            onChange={(e) => update(node.id, { fillerKind: e.target.value as CabinetNode['fillerKind'] })}
+          >
+            <option value="none">None</option>
+            <option value="drawer">Drawer</option>
+          </select>
+        </Field>
+      )}
       <NumField label="Rotation (°)" value={(node.transform.rotationY * 180) / Math.PI} step={15} min={-360} max={360}
         onChange={(v) =>
           update(node.id, {

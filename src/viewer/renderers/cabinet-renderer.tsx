@@ -3,7 +3,7 @@
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import type { Group } from 'three'
-import type { CabinetNode, MaterialRef } from '@/core/schema'
+import type { AnyNode, CabinetNode, MaterialRef } from '@/core/schema'
 
 // Memoize once per render — `normalScale={new Vector2(...)}` inline would
 // recreate a Vector2 on every render and force the material to update.
@@ -11,7 +11,7 @@ const normalScale = (m: MaterialRef) => {
   const s = m.normalScale ?? 1.5
   return new THREE.Vector2(s, s)
 }
-import { buildCabinetGeometry } from '@/core/geometry/cabinet'
+import { buildCabinetGeometry, computeFillerHeight } from '@/core/geometry/cabinet'
 import { useRegistry } from '@/core/registry/use-registry'
 import { emitter } from '@/core/events/emitter'
 import { useScene } from '@/core/store/use-scene'
@@ -22,6 +22,8 @@ export function CabinetRenderer({ node }: { node: CabinetNode }) {
   const ref = useRef<Group>(null!)
   useRegistry(node.id, 'cabinet', ref)
   const selected = useScene((s) => s.selectedIds.includes(node.id))
+  const nodes = useScene((s) => s.nodes) as Record<string, AnyNode>
+  const fillerHeight = node.fillerKind === 'drawer' ? computeFillerHeight(node, nodes) : 0
   const carcassRep = node.carcassMaterial.textureRepeat ?? 2
   const doorRep = node.doorMaterial.textureRepeat ?? 2
   const handleRep = node.handleMaterial.textureRepeat ?? 2
@@ -36,8 +38,10 @@ export function CabinetRenderer({ node }: { node: CabinetNode }) {
   const handleRough = useMaterialTexture(node.handleMaterial.roughnessMapUrl, true, handleRep)
 
   const geom = useMemo(
-    () => buildCabinetGeometry(node),
-    [node.style, node.width, node.height, node.depth, node.doorKind, node.drawerCount],
+    () => buildCabinetGeometry(node, fillerHeight),
+    // fillerHeight is derived from scene nodes, so it must be in deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [node.style, node.width, node.height, node.depth, node.doorKind, node.drawerCount, node.fillerKind, fillerHeight],
   )
 
   const onClick = (e: any) => {

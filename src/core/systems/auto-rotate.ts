@@ -5,8 +5,15 @@
 // returned rotationY for the new node.
 
 import { useScene } from '@/core/store/use-scene'
+import type { AnyNode } from '@/core/schema'
 
 const FACE_DIST = 0.6 // 60 cm — within this range of a wall, auto-orient
+
+export function shouldAutoRotateToWall(node: AnyNode): boolean {
+  if (node.type === 'cabinet') return true
+  if (node.type !== 'custom-item') return false
+  return node.assetId === 'predef:fridge' || node.assetId === 'predef:oven'
+}
 
 /**
  * Given a placement position, find the nearest wall within {@link FACE_DIST}

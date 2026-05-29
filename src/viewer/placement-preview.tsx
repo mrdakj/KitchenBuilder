@@ -7,11 +7,12 @@ import { useGLTF } from '@react-three/drei'
 import { useEditor } from '@/core/store/use-editor'
 import { useScene } from '@/core/store/use-scene'
 import { snap } from '@/core/utils/math'
-import { boxFor, collidesBox } from '@/core/systems/collision'
+import { boxFor, collidesBox, isAllowedBuiltInCabinetOverlap } from '@/core/systems/collision'
 import { buildCabinetGeometry } from '@/core/geometry/cabinet'
 import type { CabinetNode } from '@/core/schema'
 import { getAssetBbox, setAssetBbox } from '@/core/assets/asset-bbox'
 import { getPredefinedAsset, isPredefinedAssetId } from '@/core/assets/predefined'
+import { findWallFacingRotation } from '@/core/systems/auto-rotate'
 
 export function PlacementPreview() {
   const group = useRef<THREE.Group>(null!)
@@ -70,11 +71,17 @@ export function PlacementPreview() {
         const w = n.width, d = n.depth
         if (sx >= cx - w / 2 && sx <= cx + w / 2 && sz >= cz - d / 2 && sz <= cz + d / 2) {
           groundY = n.transform.position[1] + n.thickness / 2
+          if (placingId === 'predef:sink') groundY -= Math.min(0.025, n.thickness / 2)
           break
         }
       }
     }
+    const wallRot =
+      tool === 'cabinet' || (tool === 'place-item' && (placingId === 'predef:fridge' || placingId === 'predef:oven'))
+        ? findWallFacingRotation([sx, groundY, sz])
+        : null
     group.current.position.set(sx, groundY, sz)
+    group.current.rotation.y = wallRot ?? 0
 
     // collision tinting
     let collides = false
@@ -87,7 +94,11 @@ export function PlacementPreview() {
             ? { w: 1.2, h: 0.04, d: 0.62, y: 0.88 }
             : { w: 0.5, h: 0.5, d: 0.5, y: 0 }
       const box = boxFor(tool === 'place-item' ? 'place-item' : tool as any, [sx, 0, sz], dims)
-      collides = !!collidesBox(null, box)
+      collides = !!collidesBox(
+        null,
+        box,
+        (n, other) => isAllowedBuiltInCabinetOverlap(placingId, box, n, other),
+      )
     }
 
     const color = collides ? 0xff5555 : 0xffdd66
@@ -163,6 +174,7 @@ export function PlacementPreview() {
       doorKind: cabDefaults.doorKind,
       drawerCount: cabDefaults.drawerCount,
       stackedBelowId: null,
+      fillerKind: 'none',
       carcassMaterial: { color: '#ffffff', roughness: 0.6, metalness: 0 },
       doorMaterial: { color: '#e5e5e5', roughness: 0.5, metalness: 0 },
       handleMaterial: { color: '#333333', roughness: 0.2, metalness: 0.8 },

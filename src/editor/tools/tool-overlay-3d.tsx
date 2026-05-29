@@ -10,7 +10,7 @@ import { makeId } from '@/core/utils/id'
 import { snap } from '@/core/utils/math'
 import type { AnyNode, CabinetNode, CountertopNode, CustomItemNode, EmptyNode, LightNode, WallNode } from '@/core/schema'
 import { findCabinetBelow, cabinetWorldTop } from '@/core/systems/cabinet-stack'
-import { boxFor, collidesBox } from '@/core/systems/collision'
+import { boxFor, collidesBox, isAllowedBuiltInCabinetOverlap } from '@/core/systems/collision'
 import { gizmoState } from '@/core/systems/gizmo-state'
 import { deselectState, moveMode } from '@/core/systems/deselect-state'
 import { isPredefinedAssetId } from '@/core/assets/predefined'
@@ -32,7 +32,13 @@ function snapXZ(x: number, z: number) {
 // dropping at the raw cursor position. The candidate node is NOT in the
 // scene yet — applyStickySnap reads scene state to find OTHERS only and
 // uses `selfNode` purely for category + frame, so passing a stub works.
-function snapPlacement(stub: AnyNode, x: number, y: number, z: number): [number, number, number] {
+function snapPlacement(
+  stub: AnyNode,
+  x: number,
+  y: number,
+  z: number,
+  suppress: { x: boolean; y: boolean; z: boolean } = { x: false, y: false, z: false },
+): [number, number, number] {
   const ed = useEditor.getState()
   if (!ed.snapEnabled) return [x, y, z]
   const dims = dimsOf(stub)
@@ -46,10 +52,26 @@ function snapPlacement(stub: AnyNode, x: number, y: number, z: number): [number,
     null,
     undefined,
     undefined,
-    { x: false, y: false, z: false },
+    suppress,
     ed.snapMode,
   )
   return [probe.x, probe.y, probe.z]
+}
+
+function findOpenCabinetAtXZ(x: number, z: number): CabinetNode | null {
+  const nodes = useScene.getState().nodes
+  for (const n of Object.values(nodes)) {
+    if (n.type !== 'cabinet' || n.doorKind !== 'none' || !n.visible) continue
+    const [cx, , cz] = n.transform.position
+    const relX = x - cx
+    const relZ = z - cz
+    const cos = Math.cos(-n.transform.rotationY)
+    const sin = Math.sin(-n.transform.rotationY)
+    const localX = relX * cos - relZ * sin
+    const localZ = relX * sin + relZ * cos
+    if (Math.abs(localX) <= n.width / 2 + 0.12 && Math.abs(localZ) <= n.depth / 2 + 0.18) return n
+  }
+  return null
 }
 
 export function ToolOverlay3D() {
@@ -133,6 +155,7 @@ export function ToolOverlay3D() {
           doorKind: d.doorKind,
           drawerCount: d.drawerCount,
           stackedBelowId: below,
+          fillerKind: 'none',
           carcassMaterial: { color: '#fff', roughness: 0.6, metalness: 0 },
           doorMaterial: { color: '#e5e5e5', roughness: 0.5, metalness: 0 },
           handleMaterial: { color: '#333', roughness: 0.2, metalness: 0.8 },
@@ -158,6 +181,7 @@ export function ToolOverlay3D() {
           doorKind: d.doorKind,
           drawerCount: d.drawerCount,
           stackedBelowId: below,
+          fillerKind: 'none',
           carcassMaterial: { color: '#ffffff', roughness: 0.6, metalness: 0 },
           doorMaterial: { color: '#e5e5e5', roughness: 0.5, metalness: 0 },
           handleMaterial: { color: '#333333', roughness: 0.2, metalness: 0.8 },
@@ -260,6 +284,7 @@ export function ToolOverlay3D() {
         // their bottom to land on a countertop's top if one's underneath.
         let initialScale: [number, number, number] = [1, 1, 1]
         let initialY = 0
+        let initialRotationY = 0
         if (assetId === 'predef:fridge') {
           // Target a 60 cm depth (kitchen-cabinet line). The GLTF is
           // normalized so longest dim = 0.5 m; the actual depth is some
@@ -280,6 +305,8 @@ export function ToolOverlay3D() {
           // Built-in oven slot is roughly the size of a base cabinet
           // (60 cm × 60 cm × 60 cm). Longest GLTF dim ≈ 0.5 m, so ×1.2.
           initialScale = [1.2, 1.2, 1.2]
+          const openCabinet = findOpenCabinetAtXZ(sx, sz)
+          if (openCabinet) initialRotationY = openCabinet.transform.rotationY
         }
         if (assetId === 'predef:induction') {
           // Hob top is ~60 cm × 52 cm; flat. Scale up to roughly fit a
@@ -297,6 +324,7 @@ export function ToolOverlay3D() {
             const w = n.width, d = n.depth
             if (sx >= cx - w / 2 && sx <= cx + w / 2 && sz >= cz - d / 2 && sz <= cz + d / 2) {
               initialY = n.transform.position[1] + n.thickness / 2
+              if (assetId === 'predef:sink') initialY -= Math.min(0.025, n.thickness / 2)
               break
             }
           }
@@ -308,18 +336,32 @@ export function ToolOverlay3D() {
           parentId: null,
           visible: true,
           assetId,
-          transform: { position: [sx, initialY, sz], rotationY: 0 },
+          transform: { position: [sx, initialY, sz], rotationY: initialRotationY },
           scale: initialScale,
           materialOverrides: {},
         }
-        const [psx, pY, psz] = snapPlacement(stub, sx, initialY, sz)
+        const [psx, pY, psz] = snapPlacement(
+          stub,
+          sx,
+          initialY,
+          sz,
+          assetId === 'predef:sink'
+            ? { x: false, y: true, z: false }
+            : { x: false, y: false, z: false },
+        )
         // Auto-rotate floor-standing appliances (fridge / oven) to face away
         // from a nearby wall. Countertop items (sink / mixer / induction)
         // sit on a slab and don't need wall orientation.
         const wantsWallFacing = assetId === 'predef:fridge' || assetId === 'predef:oven'
-        const facingRot = wantsWallFacing ? (findWallFacingRotation([psx, pY, psz]) ?? 0) : 0
-        const box = boxFor('place-item', [psx, pY, psz], { w: 0.5, h: 0.5, d: 0.5, y: pY })
-        if (collidesBox(null, box)) {
+        const facingRot = assetId === 'predef:oven'
+          ? initialRotationY
+          : wantsWallFacing
+            ? (findWallFacingRotation([psx, pY, psz]) ?? 0)
+            : 0
+        const placedDims = dimsOf({ ...stub, transform: { ...stub.transform, position: [psx, pY, psz] } })
+          ?? { w: 0.5, h: 0.5, d: 0.5 }
+        const box = boxFor('place-item', [psx, pY, psz], { ...placedDims, y: pY })
+        if (collidesBox(null, box, (n, other) => isAllowedBuiltInCabinetOverlap(assetId, box, n, other))) {
           console.warn('asset placement blocked — would collide')
           return
         }

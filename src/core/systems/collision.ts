@@ -82,13 +82,54 @@ export function overlaps(a: Box, b: Box): boolean {
   )
 }
 
-export function collidesBox(ignoreId: string | null, box: Box): string | null {
+export function isAllowedBuiltInCabinetOverlap(
+  assetId: string | null,
+  box: Box,
+  otherNode: AnyNode,
+  otherBox: Box,
+): boolean {
+  if (assetId === 'predef:sink' && otherNode.type === 'countertop') {
+    const centerX = (box.min[0] + box.max[0]) / 2
+    const centerZ = (box.min[2] + box.max[2]) / 2
+    const margin = 0.02
+    const centeredOnCountertop =
+      centerX >= otherBox.min[0] - margin &&
+      centerX <= otherBox.max[0] + margin &&
+      centerZ >= otherBox.min[2] - margin &&
+      centerZ <= otherBox.max[2] + margin
+    const verticallyCutsSlab = box.min[1] < otherBox.max[1] + margin && box.max[1] > otherBox.min[1] - margin
+    return centeredOnCountertop && verticallyCutsSlab
+  }
+
+  if (assetId !== 'predef:oven' && assetId !== 'predef:fridge') return false
+  if (otherNode.type !== 'cabinet') return false
+  if (otherNode.doorKind !== 'none') return false
+
+  const centerX = (box.min[0] + box.max[0]) / 2
+  const centerZ = (box.min[2] + box.max[2]) / 2
+  const margin = 0.08
+  const centeredInCabinet =
+    centerX >= otherBox.min[0] - margin &&
+    centerX <= otherBox.max[0] + margin &&
+    centerZ >= otherBox.min[2] - margin &&
+    centerZ <= otherBox.max[2] + margin
+  const verticallyContained = box.min[1] >= otherBox.min[1] - margin && box.max[1] <= otherBox.max[1] + margin
+
+  return centeredInCabinet && verticallyContained
+}
+
+export function collidesBox(
+  ignoreId: string | null,
+  box: Box,
+  allowOverlap?: (node: AnyNode, otherBox: Box) => boolean,
+): string | null {
   const state = useScene.getState()
   for (const n of Object.values(state.nodes)) {
     if (!n.visible) continue
     if (n.id === ignoreId) continue
     const other = nodeBox(n)
     if (!other) continue
+    if (allowOverlap?.(n, other)) continue
     if (overlaps(box, other)) return n.id
   }
   return null

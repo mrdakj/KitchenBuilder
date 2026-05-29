@@ -13,6 +13,7 @@ import { applyStickySnap, createSnapState, dimsOf, resetSnapState, snapWallTrans
 import { snapAxisFlush } from '@/core/systems/extrude'
 import { gizmoState } from '@/core/systems/gizmo-state'
 import { snap as snapStep } from '@/core/utils/math'
+import { findWallFacingRotation, shouldAutoRotateToWall } from '@/core/systems/auto-rotate'
 
 const TRANSFORMABLE = new Set(['cabinet', 'countertop', 'custom-item', 'wall', 'light', 'empty'])
 
@@ -537,9 +538,14 @@ export function SelectionGizmo() {
             y: !tcAxis.includes('Y') && tcAxis !== '' && tcAxis !== 'XY' && tcAxis !== 'YZ' && tcAxis !== 'XYZ',
             z: !tcAxis.includes('Z') && tcAxis !== '' && tcAxis !== 'XZ' && tcAxis !== 'YZ' && tcAxis !== 'XYZ',
           }
+          if (node.type === 'custom-item' && tcAxis === 'Y') suppress.y = true
           const mode = useEditor.getState().snapMode
           applyStickySnap(node as any, dims, p, snapStateRef.current, prevPosRef.current, undefined, undefined, suppress, mode)
           target.position.set(p.x, p.y, p.z)
+          const wallRot = shouldAutoRotateToWall(node)
+            ? findWallFacingRotation([p.x, p.y, p.z])
+            : null
+          if (wallRot !== null) target.rotation.y = wallRot
           prevPosRef.current = p.clone()
         }
       }

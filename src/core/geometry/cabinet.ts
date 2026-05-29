@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import type { CabinetNode } from '@/core/schema'
+import type { AnyNode, CabinetNode, CustomItemNode } from '@/core/schema'
 
 export type CabinetGeom = {
   carcass: THREE.BufferGeometry
@@ -9,11 +9,11 @@ export type CabinetGeom = {
 
 const PANEL_T = 0.018
 const DOOR_GAP = 0.003
-const TOE_KICK_H = 0.08
+export const TOE_KICK_H = 0.08
 const TOE_KICK_INSET = 0.05
 
-export function buildCabinetGeometry(node: CabinetNode): CabinetGeom {
-  const { width: w, height: h, depth: d, style, doorKind, drawerCount } = node
+export function buildCabinetGeometry(node: CabinetNode, fillerHeight = 0): CabinetGeom {
+  const { width: w, height: h, depth: d, style, doorKind, drawerCount, fillerKind } = node
 
   const carcassShapes: THREE.BufferGeometry[] = []
 
@@ -97,7 +97,60 @@ export function buildCabinetGeometry(node: CabinetNode): CabinetGeom {
     }
   }
 
+  // Filler drawer at the bottom of an open (doorKind === 'none') cabinet.
+  // Gives users a way to fill leftover space below an oven or other appliance.
+  if (doorKind === 'none' && fillerKind === 'drawer') {
+    const fh = Math.min(fillerHeight, carcassHeight - 0.05)
+    if (fh >= 0.05) {
+      const dw = w - DOOR_GAP * 2
+      const dh = fh - DOOR_GAP * 2
+      const cy = carcassBottom + fh / 2
+      doors.push({
+        geom: new THREE.BoxGeometry(dw, dh, PANEL_T),
+        position: new THREE.Vector3(0, cy, faceZ),
+      })
+      handles.push({
+        geom: new THREE.BoxGeometry(Math.min(0.15, dw * 0.4), 0.015, 0.02),
+        position: new THREE.Vector3(0, cy + dh / 2 - 0.04, faceZ + PANEL_T / 2 + 0.01),
+      })
+    }
+  }
+
   return { carcass, doors, handles }
+}
+
+/**
+ * Find the lowest appliance (oven, fridge) inside this cabinet's XZ footprint
+ * and return the drawer height needed to fill the space below it.
+ * Returns 0 when no appliance is found or there is no usable space.
+ */
+export function computeFillerHeight(cabinet: CabinetNode, nodes: Record<string, AnyNode>): number {
+  const hasToeKick = cabinet.style === 'base' || cabinet.style === 'tall'
+  const carcassBottom = hasToeKick ? TOE_KICK_H : 0
+  const [cx, cy, cz] = cabinet.transform.position
+  const rotY = cabinet.transform.rotationY
+  const cos = Math.cos(-rotY)
+  const sin = Math.sin(-rotY)
+  const hw = cabinet.width / 2 + 0.05
+  const hd = cabinet.depth / 2 + 0.05
+
+  let lowestItemBottom: number | null = null
+  for (const n of Object.values(nodes)) {
+    if (n.type !== 'custom-item') continue
+    const item = n as CustomItemNode
+    const [ix, iy, iz] = item.transform.position
+    const relX = ix - cx
+    const relZ = iz - cz
+    const localX = relX * cos - relZ * sin
+    const localZ = relX * sin + relZ * cos
+    if (Math.abs(localX) > hw || Math.abs(localZ) > hd) continue
+    if (lowestItemBottom === null || iy < lowestItemBottom) lowestItemBottom = iy
+  }
+
+  if (lowestItemBottom === null) return 0
+  // Convert world Y to local cabinet space; clamp to a sensible range.
+  const h = (lowestItemBottom - cy) - carcassBottom
+  return Math.max(0, Math.min(h, cabinet.height - carcassBottom - 0.05))
 }
 
 function mergeGeometries(geoms: THREE.BufferGeometry[]): THREE.BufferGeometry {

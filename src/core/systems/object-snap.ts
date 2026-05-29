@@ -1,7 +1,7 @@
 // Blender-style Snapping Logic Rewrite
 
 import * as THREE from 'three'
-import type { AnyNode, CustomItemNode, WallNode } from '@/core/schema'
+import type { AnyNode, CabinetNode, CustomItemNode, WallNode } from '@/core/schema'
 import { useScene } from '@/core/store/use-scene'
 import { useEditor, type SnapMode } from '@/core/store/use-editor'
 import { nodeBox, overlaps, type Box } from '@/core/systems/collision'
@@ -301,6 +301,170 @@ type Cand = {
   targetId: string
 }
 
+type FaceFeature = ReturnType<typeof getFeatures>['faces'][number]
+
+const PARALLEL_DOT = 0.965
+const FACE_OVERLAP_TOL = 0.04
+
+function intervalOnAxis(points: THREE.Vector3[], axis: THREE.Vector3): [number, number] {
+  let lo = Infinity
+  let hi = -Infinity
+  for (const p of points) {
+    const d = p.dot(axis)
+    if (d < lo) lo = d
+    if (d > hi) hi = d
+  }
+  return [lo, hi]
+}
+
+function intervalsOverlap(a: [number, number], b: [number, number], tol = FACE_OVERLAP_TOL): boolean {
+  return a[0] <= b[1] + tol && a[1] + tol >= b[0]
+}
+
+function faceCorners(face: FaceFeature): THREE.Vector3[] {
+  const out: THREE.Vector3[] = []
+  for (const su of [-1, 1]) {
+    for (const sv of [-1, 1]) {
+      out.push(face.center.clone().addScaledVector(face.u, su * face.hu).addScaledVector(face.v, sv * face.hv))
+    }
+  }
+  return out
+}
+
+function closestPointsBetweenSegments(
+  p1: THREE.Vector3,
+  q1: THREE.Vector3,
+  p2: THREE.Vector3,
+  q2: THREE.Vector3,
+): { source: THREE.Vector3; target: THREE.Vector3 } {
+  const d1 = q1.clone().sub(p1)
+  const d2 = q2.clone().sub(p2)
+  const r = p1.clone().sub(p2)
+  const a = d1.dot(d1)
+  const e = d2.dot(d2)
+  const f = d2.dot(r)
+
+  let s = 0
+  let t = 0
+  const eps = 1e-8
+
+  if (a <= eps && e <= eps) return { source: p1.clone(), target: p2.clone() }
+  if (a <= eps) {
+    t = Math.max(0, Math.min(1, f / e))
+  } else {
+    const c = d1.dot(r)
+    if (e <= eps) {
+      s = Math.max(0, Math.min(1, -c / a))
+    } else {
+      const b = d1.dot(d2)
+      const denom = a * e - b * b
+      if (denom !== 0) s = Math.max(0, Math.min(1, (b * f - c * e) / denom))
+      const tNom = b * s + f
+      if (tNom < 0) {
+        t = 0
+        s = Math.max(0, Math.min(1, -c / a))
+      } else if (tNom > e) {
+        t = 1
+        s = Math.max(0, Math.min(1, (b - c) / a))
+      } else {
+        t = tNom / e
+      }
+    }
+  }
+
+  return {
+    source: p1.clone().addScaledVector(d1, s),
+    target: p2.clone().addScaledVector(d2, t),
+  }
+}
+
+function pushGenericCornerCandidates(
+  selfFeats: ReturnType<typeof getFeatures>,
+  otherFeats: ReturnType<typeof getFeatures>,
+  otherId: string,
+  out: Cand[],
+) {
+  for (const sc of selfFeats.corners) {
+    for (const oc of otherFeats.corners) {
+      const delta = oc.clone().sub(sc)
+      const score = delta.length()
+      if (score <= ENGAGE_DIST) out.push({ delta, score, targetId: otherId })
+    }
+  }
+}
+
+function pushGenericEdgeCandidates(
+  selfFeats: ReturnType<typeof getFeatures>,
+  otherFeats: ReturnType<typeof getFeatures>,
+  otherId: string,
+  out: Cand[],
+) {
+  for (const se of selfFeats.edges) {
+    for (const oe of otherFeats.edges) {
+      if (Math.abs(se.dir.dot(oe.dir)) < PARALLEL_DOT) continue
+      const pair = closestPointsBetweenSegments(se.start, se.end, oe.start, oe.end)
+      const delta = pair.target.sub(pair.source)
+      const score = delta.length()
+      if (score <= ENGAGE_DIST) out.push({ delta, score, targetId: otherId })
+    }
+  }
+}
+
+function pushGenericFaceCandidates(
+  selfFeats: ReturnType<typeof getFeatures>,
+  otherFeats: ReturnType<typeof getFeatures>,
+  otherId: string,
+  out: Cand[],
+) {
+  for (const sf of selfFeats.faces) {
+    const sCorners = faceCorners(sf)
+    for (const of of otherFeats.faces) {
+      // Face snapping should bring opposing box faces together. Same-facing
+      // planes are deliberately ignored; those are usually co-planar alignments
+      // better handled by edge/corner mode.
+      if (sf.normal.dot(of.normal) > -PARALLEL_DOT) continue
+      const oCorners = faceCorners(of)
+      const sU = intervalOnAxis(sCorners, of.u)
+      const sV = intervalOnAxis(sCorners, of.v)
+      const oU = intervalOnAxis(oCorners, of.u)
+      const oV = intervalOnAxis(oCorners, of.v)
+      if (!intervalsOverlap(sU, oU) || !intervalsOverlap(sV, oV)) continue
+
+      const planeDelta = of.center.clone().sub(sf.center).dot(of.normal)
+      const score = Math.abs(planeDelta)
+      if (score > ENGAGE_DIST) continue
+      out.push({
+        delta: of.normal.clone().multiplyScalar(planeDelta),
+        score,
+        targetId: otherId,
+      })
+    }
+  }
+}
+
+function genericFeatureCandidates(
+  selfFrame: Frame,
+  otherFrame: Frame,
+  otherId: string,
+  mode: SnapMode,
+): Cand[] {
+  const out: Cand[] = []
+  const selfFeats = getFeatures(selfFrame)
+  const otherFeats = getFeatures(otherFrame)
+
+  if (mode === 'auto' || mode === 'corner') {
+    pushGenericCornerCandidates(selfFeats, otherFeats, otherId, out)
+  }
+  if (mode === 'auto' || mode === 'edge') {
+    pushGenericEdgeCandidates(selfFeats, otherFeats, otherId, out)
+  }
+  if (mode === 'auto' || mode === 'face') {
+    pushGenericFaceCandidates(selfFeats, otherFeats, otherId, out)
+  }
+
+  return out
+}
+
 // Generous threshold for SECONDARY edge alignment — fires when the primary
 // snap is already engaged and a matching edge lies within 35 cm. Larger
 // than ENGAGE_DIST because once the fridge is touching the cabinet's side,
@@ -394,6 +558,52 @@ function pushStack(
   })
 }
 
+// How far the oven front panel protrudes past the cabinet's open face (m).
+const OVEN_PROTRUDE = 0.02
+// Snap only fires when the oven front is close to the cabinet front. Keeping
+// this tight makes it easy to pull the oven back out without fighting snap.
+const INSIDE_TRIGGER = 0.14
+const VERTICAL_OPENING_TRIGGER = 0.45
+
+// Snap the oven FRONT face so it protrudes OVEN_PROTRUDE beyond the open
+// cabinet's true front face. The back face is intentionally ignored; otherwise
+// the oven can latch deep inside the cabinet and feel stuck.
+function pushIntoOpenCabinet(
+  axis: 0 | 2,
+  frontSign: 1 | -1,
+  s: AABB,
+  o: AABB,
+  otherId: string,
+  out: Cand[],
+) {
+  const lat: 0 | 2 = axis === 0 ? 2 : 0
+  // Appliance centre must sit within the cabinet's lateral (width) range.
+  const sCenLat = (s.min[lat] + s.max[lat]) / 2
+  if (sCenLat < o.min[lat] - 0.05 || sCenLat > o.max[lat] + 0.05) return
+  if (!rangesOverlap(s.min[1], s.max[1], o.min[1], o.max[1])) return
+
+  const oFront = frontSign === 1 ? o.max[axis] : o.min[axis]
+  const sFront = frontSign === 1 ? s.max[axis] : s.min[axis]
+  const d = (oFront + frontSign * OVEN_PROTRUDE) - sFront
+  if (Math.abs(d) > INSIDE_TRIGGER) return
+
+  const sCenterLat = (s.min[lat] + s.max[lat]) / 2
+  const oCenterLat = (o.min[lat] + o.max[lat]) / 2
+  const latDelta = oCenterLat - sCenterLat
+  const topDelta = o.max[1] - s.max[1]
+  const bottomDelta = o.min[1] - s.min[1]
+  const yDelta = Math.abs(topDelta) <= VERTICAL_OPENING_TRIGGER
+    ? topDelta
+    : Math.abs(bottomDelta) <= VERTICAL_OPENING_TRIGGER
+      ? bottomDelta
+      : 0
+
+  const delta = new THREE.Vector3(0, yDelta, 0)
+  delta.setComponent(axis, d)
+  delta.setComponent(lat, latDelta)
+  out.push({ delta, score: Math.abs(d), targetId: otherId })
+}
+
 function kitchenCandidates(
   selfNode: AnyNode,
   otherNode: AnyNode,
@@ -407,11 +617,27 @@ function kitchenCandidates(
   const cabinetLike = (c: KitchenCat) => c === 'cabinet' || c === 'appliance'
 
   // Cabinet/appliance ↔ cabinet/appliance: side-to-side / back-to-back.
+  // Exception: appliance being placed INTO an open cabinet uses front-flush
+  // snap so only the oven's front face shows at the cabinet opening.
+  const otherIsOpenCab = oCat === 'cabinet'
+    && otherNode.type === 'cabinet'
+    && (otherNode as CabinetNode).doorKind === 'none'
   if (cabinetLike(sCat) && cabinetLike(oCat)) {
-    pushSide(0, sA, oA, +1, id, out)
-    pushSide(0, sA, oA, -1, id, out)
-    pushSide(2, sA, oA, +1, id, out)
-    pushSide(2, sA, oA, -1, id, out)
+    if (sCat === 'appliance' && selfNode.type === 'custom-item' && selfNode.assetId === 'predef:oven' && otherIsOpenCab) {
+      const rotY = (otherNode as CabinetNode).transform.rotationY
+      const frontX = Math.sin(rotY)
+      const frontZ = Math.cos(rotY)
+      if (Math.abs(frontX) > Math.abs(frontZ)) {
+        pushIntoOpenCabinet(0, frontX >= 0 ? 1 : -1, sA, oA, id, out)
+      } else {
+        pushIntoOpenCabinet(2, frontZ >= 0 ? 1 : -1, sA, oA, id, out)
+      }
+    } else {
+      pushSide(0, sA, oA, +1, id, out)
+      pushSide(0, sA, oA, -1, id, out)
+      pushSide(2, sA, oA, +1, id, out)
+      pushSide(2, sA, oA, -1, id, out)
+    }
   }
 
   // Cabinet/appliance/countertop ↔ wall: side flush.
@@ -442,6 +668,31 @@ function kitchenCandidates(
   }
 
   return out
+}
+
+function isOvenIntoOpenCabinet(selfNode: AnyNode, otherNode: AnyNode): boolean {
+  return selfNode.type === 'custom-item' &&
+    selfNode.assetId === 'predef:oven' &&
+    otherNode.type === 'cabinet' &&
+    otherNode.doorKind === 'none'
+}
+
+function withPartialHorizontalSnaps(chosen: Cand, all: Cand[], suppress: { x: boolean; z: boolean }): THREE.Vector3 {
+  const delta = chosen.delta.clone()
+  for (const axis of ['x', 'z'] as const) {
+    if (suppress[axis] || Math.abs(delta[axis]) > 1e-6) continue
+    let best = 0
+    let bestAbs = ENGAGE_DIST
+    for (const c of all) {
+      const component = c.delta[axis]
+      const abs = Math.abs(component)
+      if (abs <= 1e-6 || abs >= bestAbs) continue
+      best = component
+      bestAbs = abs
+    }
+    delta[axis] = best
+  }
+  return delta
 }
 
 // Aggregate stack snap when self spans multiple cabinets/countertops:
@@ -510,7 +761,6 @@ export function applyStickySnap(
   suppress: { x: boolean; y: boolean; z: boolean },
   snapMode: SnapMode = 'auto'
 ): { snappedX: boolean; snappedY: boolean; snappedZ: boolean } {
-  void snapMode // mode buttons are advisory only — kitchen rules apply universally
   const rotY = (selfNode as any).transform?.rotationY ?? 0
   const selfFrame = getFrameFor(selfNode, pos, rotY)
   if (!selfFrame) return { snappedX: false, snappedY: false, snappedZ: false }
@@ -529,8 +779,14 @@ export function applyStickySnap(
     const otherFrame = getFrameFor(other)
     if (!otherFrame) continue
     const otherAabb = frameAabb(otherFrame)
-    const cands = kitchenCandidates(selfNode, other, selfAabb, otherAabb)
-    for (const c of cands) all.push(c)
+    if (snapMode === 'auto' || snapMode === 'axis') {
+      const cands = kitchenCandidates(selfNode, other, selfAabb, otherAabb)
+      for (const c of cands) all.push(c)
+    }
+    if (snapMode !== 'axis' && !isOvenIntoOpenCabinet(selfNode, other)) {
+      const cands = genericFeatureCandidates(selfFrame, otherFrame, other.id, snapMode)
+      for (const c of cands) all.push(c)
+    }
     // Collect potential supports for the aggregated multi-stack pass below.
     if (selfNode.type === 'countertop' && other.type === 'cabinet') {
       if (rangesOverlap(selfAabb.min[0], selfAabb.max[0], otherAabb.min[0], otherAabb.max[0]) &&
@@ -597,13 +853,15 @@ export function applyStickySnap(
   }
   state.lockAnchor = pos.clone()
 
-  if (!suppress.x) pos.x += chosen.delta.x
-  if (!suppress.y) pos.y += chosen.delta.y
-  if (!suppress.z) pos.z += chosen.delta.z
+  const resolvedDelta = withPartialHorizontalSnaps(chosen, all, { x: suppress.x, z: suppress.z })
+
+  if (!suppress.x) pos.x += resolvedDelta.x
+  if (!suppress.y) pos.y += resolvedDelta.y
+  if (!suppress.z) pos.z += resolvedDelta.z
   return {
-    snappedX: !suppress.x && Math.abs(chosen.delta.x) > 1e-6,
-    snappedY: !suppress.y && Math.abs(chosen.delta.y) > 1e-6,
-    snappedZ: !suppress.z && Math.abs(chosen.delta.z) > 1e-6,
+    snappedX: !suppress.x && Math.abs(resolvedDelta.x) > 1e-6,
+    snappedY: !suppress.y && Math.abs(resolvedDelta.y) > 1e-6,
+    snappedZ: !suppress.z && Math.abs(resolvedDelta.z) > 1e-6,
   }
 }
 

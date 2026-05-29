@@ -10,13 +10,11 @@ import { useScene } from '@/core/store/use-scene'
 import { useEditor } from '@/core/store/use-editor'
 import { useMaterialTexture } from '@/viewer/use-material-texture'
 
-// Default footprint of the predef sink (slightly smaller than the visible
-// model so the sink rim hides the cut edges). The sink GLTF's long side runs
-// along its local Z axis, so the unrotated hole is wider along Z (depth)
-// than X — earlier W/D were swapped which made rot=0 look like rot=90 and
-// vice-versa once a real sink rotation was applied.
-const SINK_HOLE_W = 0.42 // along sink local X
-const SINK_HOLE_D = 0.34 // along sink local Z
+// Default footprint of the predef sink cutout (slightly smaller than the
+// visible rim so the sink hides the cut edges). The sink body mesh is longer
+// on its local Z axis than local X, so these must stay in sink-local axes.
+const SINK_HOLE_W = 0.31 // along sink local X
+const SINK_HOLE_D = 0.46 // along sink local Z
 const SINK_HOLE_INSET = 0.005 // 5 mm — keeps hole strictly inside the countertop boundary
 // Approx height of a custom-item: GLTF normalized to 0.5 along longest axis,
 // then multiplied by the node's scale.y. Used for Y-range overlap test.
@@ -72,9 +70,8 @@ export function CountertopRenderer({ node }: { node: CountertopNode }) {
       const w = SINK_HOLE_W * sinkScaleX
       const d = SINK_HOLE_D * sinkScaleZ
 
-      // Sink rotation expressed in the countertop's local frame, then mapped
-      // to the 2D shape plane (shape Y = local Z, so rotation sign flips).
-      const relRot = node.transform.rotationY - n.transform.rotationY
+      // Sink rotation expressed in the countertop's local frame.
+      const relRot = n.transform.rotationY - node.transform.rotationY
 
       // AABB of the rotated rectangle in shape coords — used to keep the
       // hole strictly inside the countertop boundary so ExtrudeGeometry
@@ -83,10 +80,12 @@ export function CountertopRenderer({ node }: { node: CountertopNode }) {
       const sr = Math.sin(relRot)
       const aabbHalfX = Math.abs((w / 2) * cr) + Math.abs((d / 2) * sr)
       const aabbHalfZ = Math.abs((w / 2) * sr) + Math.abs((d / 2) * cr)
-      if (Math.abs(lx) + aabbHalfX > halfW) continue
-      if (Math.abs(lz) + aabbHalfZ > halfD) continue
+      if (aabbHalfX > halfW || aabbHalfZ > halfD) continue
+      if (Math.abs(lx) > node.width / 2 || Math.abs(lz) > node.depth / 2) continue
+      const clampedLx = THREE.MathUtils.clamp(lx, -halfW + aabbHalfX, halfW - aabbHalfX)
+      const clampedLz = THREE.MathUtils.clamp(lz, -halfD + aabbHalfZ, halfD - aabbHalfZ)
 
-      out.push({ lx, lz, w, d, rot: relRot })
+      out.push({ lx: clampedLx, lz: clampedLz, w, d, rot: relRot })
     }
     return out
   }, [
@@ -127,8 +126,8 @@ export function CountertopRenderer({ node }: { node: CountertopNode }) {
       ]
       const hole = new THREE.Path()
       corners.forEach(([ox, oz], i) => {
-        const x = c.lx + ox * cr - oz * sr
-        const z = c.lz + ox * sr + oz * cr
+        const x = c.lx + ox * cr + oz * sr
+        const z = c.lz - ox * sr + oz * cr
         if (i === 0) hole.moveTo(x, z)
         else hole.lineTo(x, z)
       })

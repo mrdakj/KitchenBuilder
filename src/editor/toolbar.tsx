@@ -530,7 +530,7 @@ function ExtrudeMenu() {
         <Maximize2 size={16} />
       </button>
       {open && supported && (
-        <div className="absolute left-0 top-full mt-1 flex flex-col gap-2 bg-neutral-900 border border-neutral-700 rounded shadow-lg z-50 p-2 w-[140px]">
+        <div className="absolute left-0 top-full mt-1 flex flex-col gap-2 bg-neutral-900 border border-neutral-700 rounded shadow-lg z-[100] p-2 w-[140px]">
           <div>
             <div className="text-[10px] text-neutral-400 mb-1 select-none">Extrude (grow)</div>
             <div className="grid grid-cols-3 gap-1">
@@ -933,7 +933,7 @@ export function ViewModeSwitcher() {
   const viewMode = useEditor((s) => s.viewMode)
   const setViewMode = useEditor((s) => s.setViewMode)
   return (
-    <div className="absolute top-2 right-2 z-50 flex rounded overflow-hidden border border-neutral-600 shadow-lg bg-neutral-900/80 backdrop-blur">
+    <div className="absolute top-2 right-2 z-30 flex rounded overflow-hidden border border-neutral-600 shadow-lg bg-neutral-900/80 backdrop-blur">
       {(['2d', 'split', '3d'] as const).map((m) => (
         <button
           key={m}
