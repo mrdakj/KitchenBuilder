@@ -473,18 +473,19 @@ function genericFeatureCandidates(
 // misaligned objects (>35 cm offset on the secondary axis) don't get
 // auto-aligned against the user's intent.
 const ALIGN_DIST = 0.35
+const WALL_EDGE_ALIGN_DIST = 0.12
 
 // Pick the smallest-magnitude alignment delta along an axis: any of the four
-// edge pairings (min↔min, max↔max, min↔max, max↔min) within ALIGN_DIST
+// edge pairings (min↔min, max↔max, min↔max, max↔min) within maxDist
 // counts. Returns 0 when none qualifies — the snap leaves the axis alone.
-function bestEdgeAlign(sMin: number, sMax: number, oMin: number, oMax: number): number {
+function bestEdgeAlign(sMin: number, sMax: number, oMin: number, oMax: number, maxDist = ALIGN_DIST): number {
   const dMinMin = oMin - sMin
   const dMaxMax = oMax - sMax
   const dMinMax = oMax - sMin
   const dMaxMin = oMin - sMax
   const candidates = [dMinMin, dMaxMax, dMinMax, dMaxMin]
   let best = 0
-  let bestAbs = ALIGN_DIST
+  let bestAbs = maxDist
   for (const c of candidates) {
     const a = Math.abs(c)
     if (a < bestAbs) {
@@ -508,6 +509,8 @@ function pushSide(
   sign: 1 | -1,
   otherId: string,
   out: Cand[],
+  alignLateral = true,
+  lateralAlignDist = ALIGN_DIST,
 ) {
   const sFace = sign === 1 ? s.max[axis] : s.min[axis]
   const oFace = sign === 1 ? o.min[axis] : o.max[axis]
@@ -516,8 +519,10 @@ function pushSide(
   if (!rangesOverlap(s.min[1], s.max[1], o.min[1], o.max[1])) return
   const lat = axis === 0 ? 2 : 0
   if (!rangesOverlap(s.min[lat], s.max[lat], o.min[lat], o.max[lat])) return
-  // Lateral edge alignment (back-to-back / front-to-front).
-  const latDelta = bestEdgeAlign(s.min[lat], s.max[lat], o.min[lat], o.max[lat])
+  // Lateral edge alignment (back-to-back / front-to-front). Wall-end snapping
+  // uses a tighter distance than cabinet alignment so it still catches the
+  // endpoint intentionally but releases after a short drag along the wall.
+  const latDelta = alignLateral ? bestEdgeAlign(s.min[lat], s.max[lat], o.min[lat], o.max[lat], lateralAlignDist) : 0
   // Y edge alignment: both pieces standing on the floor get their bottoms
   // (or tops) lined up — addresses the "fridge snapped on side and back but
   // floats slightly above the cabinet's floor line" case.
@@ -642,10 +647,10 @@ function kitchenCandidates(
 
   // Cabinet/appliance/countertop ↔ wall: side flush.
   if ((cabinetLike(sCat) || sCat === 'countertop') && oCat === 'wall') {
-    pushSide(0, sA, oA, +1, id, out)
-    pushSide(0, sA, oA, -1, id, out)
-    pushSide(2, sA, oA, +1, id, out)
-    pushSide(2, sA, oA, -1, id, out)
+    pushSide(0, sA, oA, +1, id, out, true, WALL_EDGE_ALIGN_DIST)
+    pushSide(0, sA, oA, -1, id, out, true, WALL_EDGE_ALIGN_DIST)
+    pushSide(2, sA, oA, +1, id, out, true, WALL_EDGE_ALIGN_DIST)
+    pushSide(2, sA, oA, -1, id, out, true, WALL_EDGE_ALIGN_DIST)
   }
 
   // Wall as self ↔ anything floor-standing: side flush so a translated wall
@@ -675,6 +680,19 @@ function isOvenIntoOpenCabinet(selfNode: AnyNode, otherNode: AnyNode): boolean {
     selfNode.assetId === 'predef:oven' &&
     otherNode.type === 'cabinet' &&
     otherNode.doorKind === 'none'
+}
+
+function shouldSkipGenericFeatureSnap(selfNode: AnyNode, otherNode: AnyNode): boolean {
+  const selfCat = categorize(selfNode)
+  const otherCat = categorize(otherNode)
+  const selfIsWallFlushable = selfCat === 'cabinet' || selfCat === 'appliance' || selfCat === 'countertop'
+
+  // Kitchen-aware wall snap already models the useful behavior: keep the
+  // object's side flush to the wall face. Generic corner/edge snapping can
+  // grab a wall endpoint and make appliances feel stuck to the wall end.
+  if (selfIsWallFlushable && otherCat === 'wall') return true
+
+  return isOvenIntoOpenCabinet(selfNode, otherNode)
 }
 
 function withPartialHorizontalSnaps(chosen: Cand, all: Cand[], suppress: { x: boolean; z: boolean }): THREE.Vector3 {
@@ -783,7 +801,7 @@ export function applyStickySnap(
       const cands = kitchenCandidates(selfNode, other, selfAabb, otherAabb)
       for (const c of cands) all.push(c)
     }
-    if (snapMode !== 'axis' && !isOvenIntoOpenCabinet(selfNode, other)) {
+    if (snapMode !== 'axis' && !shouldSkipGenericFeatureSnap(selfNode, other)) {
       const cands = genericFeatureCandidates(selfFrame, otherFrame, other.id, snapMode)
       for (const c of cands) all.push(c)
     }
